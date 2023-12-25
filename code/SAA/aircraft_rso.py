@@ -7,7 +7,7 @@ import random
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from ML.fltpred import *
+# from fltpred import *
 
 db_cdo_gdsj = pd.read_csv(fr'D:\nuaadzm\PycharmProjects\detour\database\sa_cdo_gdsj.csv', header=None)
 # db_cdo_gdsd = pd.read_csv(fr'D:\nuaadzm\PycharmProjects\detour\database\sa_cdo_gdsd.csv', header=None)

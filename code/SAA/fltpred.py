@@ -13,8 +13,8 @@ import gurobipy as gp
 from gurobipy import GRB
 
 
-feaset = pd.read_excel(r'D:\nuaadzm\PycharmProjects\detour\ML\allset1112.xlsx')
-regressor = load(r'D:\nuaadzm\PycharmProjects\detour\ML\model_pretrain_py312.joblib')
+feaset = pd.read_excel(r'D:\nuaadzm\PycharmProjects\uncertain\LocalData\allset1112.xlsx')
+regressor = load(r'D:\nuaadzm\PycharmProjects\uncertain\LocalData\model_pretrain_py312.joblib')
 
 
 

@@ -18,7 +18,7 @@ ub_ua = 800
 lb_ua = 500
 ub_ud = 300
 lb_ud = 0
-timerange = 1000
+timerange = 300
 
 epsilon = 10
 k = 1
