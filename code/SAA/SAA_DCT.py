@@ -18,10 +18,10 @@ ub_ua = 800
 lb_ua = 500
 ub_ud = 300
 lb_ud = 0
-timerange = 300
+timerange = 3000
 
 epsilon = 10
-k = 2
+k = 1
 
 randtype = 'uni'
 p1a = 800
@@ -32,7 +32,7 @@ p2d = 800
 # randtype = 'norm'
 # p1 = 0
 # p2 = 30
-weight=0
+weight=0.2
 S = 10
 seed=42
 

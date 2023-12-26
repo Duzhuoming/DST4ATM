@@ -33,8 +33,8 @@ p2d = 800
 # randtype = 'norm'
 # p1 = 0
 # p2 = 30
-weight = 0
-S =10
+weight = 0.2
+S =5
 seed = 42
 
 (ldte, ldtl, ldtt), (ete, etl, ett), (obte, obtt, obtl, utt), ac_list, sep, (A, D, R, ALL), df = compute_parameters(
@@ -118,7 +118,7 @@ mp.setObjective(obj2 + obj1 * weight + 1 / len(S) * q, GRB.MINIMIZE)
 # time limit
 mp.Params.TimeLimit = 1200
 
-def makesp(sol_dict={}):
+def makesp(sol_dict={},relax=True):
     sp = gp.Model("sp")
     sp.setParam('PreCrush', 1)
     sp.setParam('InfUnbdInfo', 1)
@@ -126,7 +126,11 @@ def makesp(sol_dict={}):
 
     x = sp.addVars(S, ALL, vtype=GRB.CONTINUOUS, name="x")
     r = sp.addVars(S, ALL, vtype=GRB.CONTINUOUS, name="r")
-    delta = sp.addVars(S, ALL, ALL, vtype=GRB.CONTINUOUS, name="delta")
+    if relax:
+        delta = sp.addVars(S, ALL, ALL, vtype=GRB.CONTINUOUS, name="delta")
+    else:
+        delta = sp.addVars(S, ALL, ALL, vtype=GRB.BINARY, name="delta")
+
 
     sp.addConstrs(x[s, i] == sol_dict[t[i]] + ds[s][i] for s in S for i in ALL)
     sp.addConstrs(delta[s, j, i] + delta[s, i, j] == 1 for s in S for i in ALL for j in ALL if i > j)
@@ -149,44 +153,60 @@ def mycallback(model, where):
         # 获取主问题的当前整数解
         curr_sol = model.cbGetSolution(model._vars)
         sol_dict = {var: curr_sol[i] for i, var in enumerate(model._vars)}
-
+        print('MP status:', model.status)
         # 构建并求解子问题
         sp=makesp(sol_dict)
+        # bsp=makesp(sol_dict,relax=False)
         rhs = ([t[i] + ds[s][i] for s in S for i in ALL] + [1 for s in S for i in ALL for j in ALL if i > j] +
                [lb_u[i] for s in S for i in ALL] + [-ub_u[i] for s in S for i in ALL] +
                [sep[i, j] * z[i, j] for s in S for i in ALL for j in ALL if i != j])
         rhs=np.array(rhs)
-        # 根据子问题的结果向主问题添加惰性约束（如适用）
-        if sp.status == GRB.OPTIMAL:
+        # 根据子问题的结果向主问题添加惰性约束（如适用）and bsp.status == GRB.OPTIMAL
+        if sp.status == GRB.OPTIMAL :
             print('optimal cut')
             # extreme point,get dual var
             constraints = sp.getConstrs()
-            num_constrs2 = len(constraints)
-            # 提取对偶变量值
+            print( model.NumConstrs)
+            # num_constrs2 = len(constraints)
             duals = [constr.Pi for constr in constraints]
             duals=np.array(duals)
-            num_duals = len(duals)
+            # num_duals = len(duals)
             # 遍历约束和对偶变量
             optcut = sum(duals * rhs)
             # lazy cut
             model.cbLazy( optcut<=q)
             # in [GRB.INFEASIBLE, GRB.INF_OR_UNBD]:
-        elif sp.status == GRB.INFEASIBLE:
+        elif sp.status == GRB.INFEASIBLE  or sp.status == GRB.INF_OR_UNBD :
+            print('feasible cut,sp.status:',sp.status)
 
-            farkas_duals = [constr.FarkasDual for constr in model.getConstrs()]
+            farkas_duals = [constr.FarkasDual for constr in sp.getConstrs()]
             optcut = sum(farkas_duals * rhs)
             model.cbLazy( optcut<=0)
+        # elif sp.status == GRB.OPTIMAL and bsp.status == GRB.INF_OR_UNBD:
+        #     print('bsp cut')
+        #     duals = [constr.Pi for constr in sp.getConstrs()]
+        #     optcut = sum(duals * rhs)
+        #     model.cbLazy( optcut<=0)
+
+
+
+        else:
+            print('error')
+    # elif where == GRB.Callback.MIPSOL:
 
 # 注册回调函数
 mp._vars = list(t.values()) + list(y.values()) + list(z.values())
 # mp.NumVars
 # mp.NumConstrs
+mp.update()
+print(mp.NumConstrs)
+
 mp.optimize(mycallback)
 
 # bsp=makesp(relax=False)
 
 
-def makebsp(t,z):
+def postbsp(t,z):
     sp = gp.Model("sp")
     # sp.setParam('PreCrush', 1)
     # sp.setParam('InfUnbdInfo', 1)
@@ -219,12 +239,12 @@ def makebsp(t,z):
 T = np.array([t[i].x for i in ALL])
 Y = np.array([[y[i, r].x for r in R] for i in ALL])
 Z = np.array([[z[i, j].x for j in ALL] for i in ALL])
-sp2,X,RR,DELTA=makebsp(T,Z)
+sp2,X,RR,DELTA=postbsp(T,Z)
 
 TrueObj=mp.objVal-1/len(S)*q.x+1/len(S)*sp2.objVal
-
-# ALPHA = np.array([alpha[i].x for i in ALL])
-# BETA = np.array([beta[i].x for i in ALL])
+print('TrueObj:',TrueObj)
+ALPHA = np.array([alpha[i].x for i in ALL])
+BETA = np.array([beta[i].x for i in ALL])
 # # zij
 # # 获取obj
 # OBJ = mp.objVal
