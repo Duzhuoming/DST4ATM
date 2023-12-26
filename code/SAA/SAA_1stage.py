@@ -21,7 +21,7 @@ lb_ud = 0
 timerange = 300
 
 epsilon = 10
-k = 1
+k = 2
 
 randtype = 'uni'
 p1a = 800
@@ -32,7 +32,7 @@ p2d = 800
 # randtype = 'norm'
 # p1 = 0
 # p2 = 30
-weight=1
+weight=0
 S = 10
 seed=42
 
@@ -133,7 +133,7 @@ obj2 = Zmax - Zmin
 obj3 = gp.quicksum(r[s, i] - x[s, i] for s in S for i in ALL)
 m.setObjective(obj2 + obj1 * weight + 1 / len(S) * obj3, GRB.MINIMIZE)
 # time limit
-m.Params.TimeLimit = 1200
+# m.Params.TimeLimit = 1200
 # m.NumVars
 # m.NumConstrs
 m.optimize()
