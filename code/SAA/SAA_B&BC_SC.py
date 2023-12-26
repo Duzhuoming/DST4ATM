@@ -19,7 +19,7 @@ ub_ua = 800
 lb_ua = 500
 ub_ud = 300
 lb_ud = 0
-timerange = 300
+timerange = 1000
 
 epsilon = 10
 k = 2
@@ -33,7 +33,7 @@ p2d = 800
 # randtype = 'norm'
 # p1 = 0
 # p2 = 30
-weight = 0.2
+weight = 1
 S =5
 seed = 42
 
@@ -57,6 +57,9 @@ S = range(S)
 
 mp = gp.Model("MP")
 mp.setParam('LazyConstraints', 1)
+# 设置解池相关参数
+mp.setParam(GRB.Param.PoolSolutions, 10)  # 存储10个最优解
+mp.setParam(GRB.Param.PoolSearchMode, 1)  # 搜索更多解
 
 t = mp.addVars(ALL, vtype=GRB.CONTINUOUS, name="t")
 y = mp.addVars(ALL, R, vtype=GRB.BINARY, name="y")
@@ -89,16 +92,6 @@ mp.addConstrs(z[i, j] >= y[i, r] + y[j, r] - 1 for i in ALL for j in ALL for r i
 # mp.addConstrs(z[i, j] ==gp.quicksum( y[i, r] * y[j, r] for r in R) for i in ALL for j in ALL  if i > j)
 
 mp.addConstrs(z[i, j] == z[j, i] for i in ALL for j in ALL if i > j)
-## stage 2
-
-#
-# for i in ALL:
-#     for j in ALL:
-#         if ac_list[i].entryfix =='LMN' and ac_list[j].entryfix =='LMN' :
-#             mp.addConstrs(r[s, j] >= r[s, i] + y[i,0]*(1-z[i, j]) * 240 - delta[s, j, i] * 10000 for s in S if i != j)
-#         elif ac_list[i].entryfix =='P268' and ac_list[j].entryfix =='P268' :
-#             mp.addConstrs(r[s, j] >= r[s, i] + y[i,1]*(1-z[i, j]) * 240 - delta[s, j, i] * 10000 for s in S  if i != j)
-
 
 # obj
 mp.addConstrs((Zmax >= gp.quicksum(y[i, r] for i in ALL)) for r in R)
@@ -153,7 +146,6 @@ def mycallback(model, where):
         # 获取主问题的当前整数解
         curr_sol = model.cbGetSolution(model._vars)
         sol_dict = {var: curr_sol[i] for i, var in enumerate(model._vars)}
-        print('MP status:', model.status)
         # 构建并求解子问题
         sp=makesp(sol_dict)
         # bsp=makesp(sol_dict,relax=False)
@@ -226,25 +218,28 @@ def postbsp(t,z):
         ALL if i != j)
     sp.update()
     num_constrs1 = sp.NumConstrs
-    sp.setObjective(gp.quicksum(r[s, i] - x[s, i] for s in S for i in ALL), GRB.MINIMIZE)
+    sp.setObjective(gp.quicksum(r[s, i] - x[s, i]-lb_u[i] for s in S for i in ALL), GRB.MINIMIZE)
 
     sp.optimize()
     X = np.array([[x[s, i].x for i in ALL] for s in S])
     RR = np.array([[r[s, i].x for i in ALL] for s in S])
     DELTA = np.array([[[delta[s, i, j].x for j in ALL] for i in ALL] for s in S])
     return sp,X,RR,DELTA
-
+# 获取解池中的解的数量
+solution_count = mp.SolCount
+print(f"Number of solutions found: {solution_count}")
+mp.setParam(GRB.Param.SolutionNumber,4)
 
 # # 获取t,y,x,r,delta
-T = np.array([t[i].x for i in ALL])
-Y = np.array([[y[i, r].x for r in R] for i in ALL])
-Z = np.array([[z[i, j].x for j in ALL] for i in ALL])
+T = np.array([t[i].Xn for i in ALL])
+Y = np.array([[y[i, r].Xn for r in R] for i in ALL])
+Z = np.array([[z[i, j].Xn for j in ALL] for i in ALL])
 sp2,X,RR,DELTA=postbsp(T,Z)
 
-TrueObj=mp.objVal-1/len(S)*q.x+1/len(S)*sp2.objVal
+TrueObj=mp.objVal-1/len(S)*q.Xn+1/len(S)*sp2.objVal
 print('TrueObj:',TrueObj)
-ALPHA = np.array([alpha[i].x for i in ALL])
-BETA = np.array([beta[i].x for i in ALL])
+ALPHA = np.array([alpha[i].Xn for i in ALL])
+BETA = np.array([beta[i].Xn for i in ALL])
 # # zij
 # # 获取obj
 # OBJ = mp.objVal

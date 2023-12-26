@@ -18,8 +18,7 @@ ub_ua = 800
 lb_ua = 500
 ub_ud = 300
 lb_ud = 0
-timerange = 3000
-
+timerange = 300
 epsilon = 10
 k = 1
 
@@ -32,7 +31,7 @@ p2d = 800
 # randtype = 'norm'
 # p1 = 0
 # p2 = 30
-weight=0.2
+weight=1
 S = 10
 seed=42
 
@@ -40,6 +39,11 @@ seed=42
 (ldte, ldtl, ldtt), (ete, etl, ett), (obte, obtt, obtl, utt), ac_list, sep, (A, D, R, ALL), df = compute_parameters(
     timerange)
 lb_t, ub_t = np.concatenate((obte, ete)), np.concatenate((obtl, etl))
+lb_ud = np.array([lb_ud for i in range(D)])
+ub_ud = np.array([ub_ud for i in range(D)])
+lb_ua = np.array([lb_ua for i in range(A)])
+ub_ua = np.array([ub_ua for i in range(A)])
+lb_u, ub_u = np.concatenate((lb_ud, lb_ua)), np.concatenate((ub_ud, ub_ua))
 target = np.concatenate((obtt, ett))
 sep *= k
 ALL = range(ALL)
@@ -56,7 +60,8 @@ S = range(S)
 
 m = gp.Model("sync")
 # m.setParam('OutputFlag', 0)
-
+m.setParam(GRB.Param.PoolSolutions, 10)  # 存储10个最优解
+m.setParam(GRB.Param.PoolSearchMode, 2)  # 搜索更多解
 t = m.addVars(ALL, vtype=GRB.CONTINUOUS, name="t")
 y = m.addVars(ALL, R, vtype=GRB.BINARY, name="y")
 z = m.addVars(ALL, ALL, vtype=GRB.BINARY, name="z")
@@ -93,15 +98,9 @@ m.addConstrs(z[i, j] >= y[i, r] + y[j, r] - 1 for i in ALL for j in ALL for r in
 m.addConstrs(z[i, j] == z[j, i] for i in ALL for j in ALL if i > j)
 ## stage 2
 m.addConstrs(x[s, i] == t[i] + ds[s][i] for s in S for i in ALL)
-for i in ALL:
-    if ac_list[i].ad == 'a':
-        m.addConstrs(x[s, i] + lb_ua <= r[s, i] for s in S)
-        m.addConstrs(r[s, i] <= x[s, i] + ub_ua for s in S)
-    elif ac_list[i].ad == 'd':
-        m.addConstrs(x[s, i] + lb_ud <= r[s, i] for s in S)
-        m.addConstrs(r[s, i] <= x[s, i] + ub_ud for s in S)
-    else:
-        print('error')
+
+m.addConstrs(r[s, i] - x[s, i] >= lb_u[i] for s in S for i in ALL)
+m.addConstrs(x[s, i] - r[s, i] >= -ub_u[i] for s in S for i in ALL)
 #
 # for i in ALL:
 #     for j in ALL:
@@ -197,3 +196,11 @@ elif is_qcp:
     print("This is a Quadratically Constrained Program (QCP)")
 else:
     print("This is a Linear Program (LP)")
+
+
+# 获取解池中的解的数量
+solution_count = m.SolCount
+print(f"Number of solutions found: {solution_count}")
+
+m.setParam(GRB.Param.SolutionNumber,4)
+t[1].X
