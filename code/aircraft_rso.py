@@ -1,21 +1,10 @@
-import copy
-import math
-import os
-import pickle
-import time
-import random
+
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-# from fltpred import *
+# from DST4ATM.code.fltpred import *
 
 db_cdo_gdsj = pd.read_csv(fr'D:\nuaadzm\PycharmProjects\detour\database\sa_cdo_gdsj.csv', header=None)
-# db_cdo_gdsd = pd.read_csv(fr'D:\nuaadzm\PycharmProjects\detour\database\sa_cdo_gdsd.csv', header=None)
-# with open(r'D:\nuaadzm\PycharmProjects\detour\database\db_route_add_dep.pickle', 'rb') as handle:
-#     db_route = pickle.load(handle)  # 其中距离是千米km
-
-# with open(r'D:\nuaadzm\PycharmProjects\detour\database\taxi_dis_mz67.pickle', 'rb') as f:
-#     taxi_route = pickle.load(f)
 
 map = pd.read_excel(r'D:\nuaadzm\PycharmProjects\detour\database\gatemap_enhance.xlsx')
 # feaset=pd.read_excel(r'D:\nuaadzm\PycharmProjects\detour\ML\allset1112.xlsx')
