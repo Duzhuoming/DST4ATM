@@ -1,6 +1,8 @@
 # DST4ATM
 Optimization in Air Traffic Management
 # 具体问题：
+![image](https://github.com/Duzhuoming/DST4ATM/assets/65158088/f74b08e7-ec86-4a37-a1bf-dc4cd25c4a5a)
+
 参见[pdf](https://github.com/Duzhuoming/DST4ATM/blob/c6c62bffd5eb14bc0592e5127c67f2698d938df4/Integrated%20runway%20scheduling%20under%20operational%20time%20uncertainty.pdf)
 
 # 直接求解
