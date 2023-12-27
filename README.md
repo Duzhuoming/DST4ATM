@@ -43,15 +43,15 @@ Optimization in Air Traffic Management
 CPLEX支持直接在变量和约束后注释([benders_annotation][ref2])其所属是主问题还是子问题，从而自动进行分解[^3]。此外，利用benders_annotation，CPLEX还可以将一个子问题再次拆解为多个子问题进行求解.
 询问GPT后得知：
 
-1) -1 (AUTO)： 这是一个自动模式，在此模式下，CPLEX将根据问题的结构和特点自动决定是否和如何应用Benders分解。在这种情况下，CPLEX优化器使用内部启发式来选择最适合当前问题的Benders策略。
+* -1 (AUTO)： 这是一个自动模式，在此模式下，CPLEX将根据问题的结构和特点自动决定是否和如何应用Benders分解。在这种情况下，CPLEX优化器使用内部启发式来选择最适合当前问题的Benders策略。
 
-2) 0 (OFF)： 这是默认值。在这个模式下，CPLEX不会自动应用Benders分解。然而，如果用户在模型中显式定义了Benders注解（通过分配变量和约束到不同的Benders阶段），CPLEX会根据这些注解应用Benders分解。
+* 0 (OFF)： 这是默认值。在这个模式下，CPLEX不会自动应用Benders分解。然而，如果用户在模型中显式定义了Benders注解（通过分配变量和约束到不同的Benders阶段），CPLEX会根据这些注解应用Benders分解。
 
-3) 1 (USER)： 在这个级别，CPLEX会使用用户指定的Benders注解来执行Benders分解。如果没有指定注解，则不会应用Benders分解。这允许用户有更细粒度的控制，但需要对Benders分解有深入的理解。
+* 1 (USER)： 在这个级别，CPLEX会使用用户指定的Benders注解来执行Benders分解。如果没有指定注解，则不会应用Benders分解。这允许用户有更细粒度的控制，但需要对Benders分解有深入的理解。
 
-4) 2 (WORKERS)： CPLEX在这个级别会自动将变量和约束分配给不同的Benders阶段，但专注于并行环境中的工作效率。这意味着CPLEX会尝试通过适当地应用Benders分解来优化并行求解的效率。
+* 2 (WORKERS)： CPLEX在这个级别会自动将变量和约束分配给不同的Benders阶段，但专注于并行环境中的工作效率。这意味着CPLEX会尝试通过适当地应用Benders分解来优化并行求解的效率。
 
-5) 3 (FULL)： 这是最积极的Benders应用级别，CPLEX会尽可能广泛地应用Benders分解，哪怕这意味着采用更激进的策略。这可能导致更长的预处理时间，但在某些问题上可能显著提高求解效率。
+* 3 (FULL)： 这是最积极的Benders应用级别，CPLEX会尽可能广泛地应用Benders分解，哪怕这意味着采用更激进的策略。这可能导致更长的预处理时间，但在某些问题上可能显著提高求解效率。
 
 根据，随机规划第二阶段所有场景的组合方式，benders cut 又有如下分类：
 
