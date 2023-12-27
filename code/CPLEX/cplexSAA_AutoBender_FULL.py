@@ -1,63 +1,30 @@
-from DST4ATM.optbase.aircraft_rso import compute_parameters, saveres, drawres, get_random
-import pandas as pd
+from DST4ATM.optbase.aircraft_rso import Parameters, saveres, drawres
 import numpy as np
-
 import warnings
-from joblib import Parallel, delayed
-
 from docplex.mp.model import Model
 
-# 计时
-import time
-
 warnings.filterwarnings('ignore')
-# modeltype='DRO'
 modeltype = 'SAA'
-ub_ua = 800
-lb_ua = 500
-ub_ud = 300
-lb_ud = 0
 timerange = 300
-epsilon = 10
-k = 1
-
-randtype = 'uni'
-p1a = 800
-p2a = 1600
-
-p1d = 600
-p2d = 800
-# randtype = 'norm'
-# p1 = 0
-# p2 = 30
-weight = 1
 S = 10
-seed = 42
+weight = 1
+parm = Parameters(timerange, S)
+parm.compute_parameters()
+# 解析parm
+ldte, ldtl, ldtt=parm.ldte, parm.ldtl, parm.ldtt
+ete, etl, ett=parm.ete, parm.etl, parm.ett
+obte, obtt, obtl, utt=parm.obte, parm.obtt, parm.obtl, parm.utt
+ac_list, sep, A, D, R, ALL, df=parm.ac_list, parm.sep, parm.A, parm.D, parm.R, parm.ALL, parm.df
+lb_t, ub_t,lb_u, ub_u  = parm.lb_t, parm.ub_t,parm.lb_u, parm.ub_u
+target = parm.target
+ds = parm.ds
+S,k=parm.S,parm.k
 
-(ldte, ldtl, ldtt), (ete, etl, ett), (obte, obtt, obtl, utt), ac_list, sep, (A, D, R, ALL), df = compute_parameters(
-    timerange)
-lb_t, ub_t = np.concatenate((obte, ete)), np.concatenate((obtl, etl))
-lb_ud = np.array([lb_ud for i in range(D)])
-ub_ud = np.array([ub_ud for i in range(D)])
-lb_ua = np.array([lb_ua for i in range(A)])
-ub_ua = np.array([ub_ua for i in range(A)])
-lb_u, ub_u = np.concatenate((lb_ud, lb_ua)), np.concatenate((ub_ud, ub_ua))
-target = np.concatenate((obtt, ett))
-sep *= k
-ALL = range(ALL)
-
-dsd = get_random(randtype, S, D, p1d, p2d, seed=seed)
-dsa = get_random(randtype, S, A, p1a, p2a, seed=seed)
-ds = np.concatenate((dsd, dsa), axis=1)
-R = range(R)
-S = range(S)
-# with Model("SAA",log_output=True) as m:
 
 m = Model("SAA",log_output=True)
-m.parameters.benders.strategy = -1
+# m.parameters.benders.strategy = -1
 
-# m.parameters.mip.display.set(2)  # 2 是一种常用的中等详细级别
-# m.parameters.mip.tolerances.mipgap = 0.055
+
 t = m.continuous_var_dict(ALL, name="t")
 y = m.binary_var_matrix(ALL, R, name="y")
 z = m.binary_var_matrix(ALL, ALL, name="z")
@@ -89,7 +56,7 @@ for i in ALL:
             m.add_constraint(y[i, 2] == 0)
 
 m.add_constraints((t[i] >= lb_t[i] for i in ALL), "lb")
-m.add_constraints((t[i] <= ub_t[i] for i in ALL), "ub")
+m.add_constraints((t[i] <= ub_t[i] for i in  ALL), "ub")
 m.add_constraints((m.sum(y[i, r] for r in R) == 1 for i in ALL), "unique1")
 m.add_constraints(z[i, j] >= y[i, r] + y[j, r] - 1 for i in ALL for j in ALL for r in R if i != j)
 # m.add_constraints(z[i, j] ==m.sum( y[i, r] * y[j, r] for r in R) for i in ALL for j in ALL  if i > j)
@@ -131,7 +98,7 @@ else:
     print(m.solve_details)
 
 
-T = np.array([t[i].sv for i in ALL])
+T = np.array([t[i].sv for i in  ALL])
 Y = np.array([[y[i, r].sv for r in R] for i in ALL])
 X = np.array([[x[s, i].sv for i in ALL] for s in S])
 RR = np.array([[r[s, i].sv for i in ALL] for s in S])
@@ -140,10 +107,7 @@ ALPHA = np.array([alpha[i].sv for i in ALL])
 BETA = np.array([beta[i].sv for i in ALL])
 Z= np.array([z[i, j].sv for i in ALL for j in ALL])
 
-S=len(S)
 
-dsd = get_random(randtype, S, D, p1d, p2d, seed=42)
-dsa = get_random(randtype, S, A, p1a, p2a, seed=42)
-ds = np.concatenate((dsd, dsa), axis=1)
+S=len(S)
 ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, S, DELTA, ds, df, k)
 drawres(D, A, ac_list, S, obte, obtl, ete, etl)

@@ -1,63 +1,32 @@
-from DST4ATM.optbase.aircraft_rso import compute_parameters, saveres, drawres, get_random
-import numpy as np
-
 import gurobipy as gp
 from gurobipy import GRB
-
+from DST4ATM.optbase.aircraft_rso import Parameters, saveres, drawres
+import numpy as np
 import warnings
+from docplex.mp.model import Model
 
-# 计时
 warnings.filterwarnings('ignore')
-# modeltype='DRO'
 modeltype = 'SAA'
-ub_ua = 800
-lb_ua = 500
-ub_ud = 300
-lb_ud = 0
 timerange = 300
-epsilon = 10
-k = 1
-
-randtype = 'uni'
-p1a = 800
-p2a = 1600
-
-p1d = 600
-p2d = 800
-# randtype = 'norm'
-# p1 = 0
-# p2 = 30
-weight=1
 S = 10
-seed=42
+weight = 1
+parm = Parameters(timerange, S)
+parm.compute_parameters()
+# 解析parm
+ldte, ldtl, ldtt=parm.ldte, parm.ldtl, parm.ldtt
+ete, etl, ett=parm.ete, parm.etl, parm.ett
+obte, obtt, obtl, utt=parm.obte, parm.obtt, parm.obtl, parm.utt
+ac_list, sep, A, D, R, ALL, df=parm.ac_list, parm.sep, parm.A, parm.D, parm.R, parm.ALL, parm.df
+lb_t, ub_t,lb_u, ub_u  = parm.lb_t, parm.ub_t,parm.lb_u, parm.ub_u
+target = parm.target
+ds = parm.ds
+S,k=parm.S,parm.k
 
 
-(ldte, ldtl, ldtt), (ete, etl, ett), (obte, obtt, obtl, utt), ac_list, sep, (A, D, R, ALL), df = compute_parameters(
-    timerange)
-lb_t, ub_t = np.concatenate((obte, ete)), np.concatenate((obtl, etl))
-lb_ud = np.array([lb_ud for i in range(D)])
-ub_ud = np.array([ub_ud for i in range(D)])
-lb_ua = np.array([lb_ua for i in range(A)])
-ub_ua = np.array([ub_ua for i in range(A)])
-lb_u, ub_u = np.concatenate((lb_ud, lb_ua)), np.concatenate((ub_ud, ub_ua))
-target = np.concatenate((obtt, ett))
-sep *= k
-ALL = range(ALL)
-
-
-
-
-
-dsd = get_random(randtype, S, D, p1d, p2d, seed=seed)
-dsa = get_random(randtype, S, A, p1a, p2a, seed=seed)
-ds = np.concatenate((dsd, dsa), axis=1)
-R = range(R)
-S = range(S)
-
-m = gp.Model("sync")
+m = gp.Model("SAA")
 # m.setParam('OutputFlag', 0)
-m.setParam(GRB.Param.PoolSolutions, 10)  # 存储10个最优解
-m.setParam(GRB.Param.PoolSearchMode, 2)  # 搜索更多解
+# m.setParam(GRB.Param.PoolSolutions, 10)  # 存储10个最优解
+# m.setParam(GRB.Param.PoolSearchMode, 2)  # 搜索更多解
 t = m.addVars(ALL, vtype=GRB.CONTINUOUS, name="t")
 y = m.addVars(ALL, R, vtype=GRB.BINARY, name="y")
 z = m.addVars(ALL, ALL, vtype=GRB.BINARY, name="z")
@@ -159,11 +128,7 @@ gap = m.getAttr('MIPGap')
 
 
 S=len(S)
-# ddf=pd.DataFrame([obj1_value,obj2_value,obj3_value,gap,t]).T
-# ddf.to_csv(fr'D:\nuaadzm\PycharmProjects\detour\rso_model3\saa\ans3.csv')
-dsd = get_random(randtype, S, D, p1d, p2d, seed=42)
-dsa = get_random(randtype, S, A, p1a, p2a, seed=42)
-ds = np.concatenate((dsd, dsa), axis=1)
+
 ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, S, DELTA, ds, df, k)
 drawres(D, A, ac_list, S, obte, obtl, ete, etl)
 

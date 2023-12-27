@@ -134,6 +134,158 @@ class Aircraft():
         a,b= getfset(fltid)
         self.fset=(a,b)
 
+class Parameters():
+    def __init__(self,dt,S, date='03'):
+        self.dt = dt
+        self.date=date
+        self.S=S
+
+
+    def compute_parameters(self):
+        ub_ua = 800
+        lb_ua = 500
+        ub_ud = 300
+        lb_ud = 0
+        epsilon = 10
+        k = 1
+        self.k=k
+        randtype = 'uni'
+        p1a = 800
+        p2a = 1600
+
+        p1d = 600
+        p2d = 800
+        # randtype = 'norm'
+        # p1 = 0
+        # p2 = 30
+        seed = 42
+
+
+
+        # with Model("SAA",log_output=True) as m:
+        columns = ['A-H', 'A-M', 'A-L', 'D-H', 'D-M', 'D-L']
+        rows = ['A-H', 'A-M', 'A-L', 'D-H', 'D-M', 'D-L']
+
+        # Define the data as seen in the image
+        data = [
+            [96, 157, 207, 60, 60, 60],  # Data for A-H
+            [60, 69, 123, 60, 60, 60],  # Data for A-M
+            [60, 69, 82, 60, 60, 60],  # Data for A-L
+            [60, 60, 60, 96, 120, 120],  # Data for D-H
+            [60, 60, 60, 60, 60, 60],  # Data for D-M
+            [60, 60, 60, 60, 60, 60]  # Data for D-L
+        ]
+
+        # Create a pandas DataFrame with the data
+        sepclass = pd.DataFrame(data, index=rows, columns=columns)
+
+        aclistsample = pd.read_csv(fr'{parent_directory}\LocalData\ad1912{self.date}.csv')  # {datadate}
+        ac_list = []
+        cuttime = 1575360000
+
+        A, D = 0, 0
+        ind = []
+
+        for index, row in aclistsample.iterrows():
+            if (row['ad'] == 'a' and row['entrytime'] < (cuttime + self.dt )):
+                A += 1
+                ac_list.append(
+                    Aircraft(row['callsign'], row['class'], row['ad'], row['entryfix'], row['time'], row['entrytime'],
+                             index, row['gate'], row['pushback_time']))
+                ind.append(index)
+
+            elif (row['ad'] == 'd' and row['pushback_time'] < (cuttime + self.dt )):
+                ac_list.append(
+                    Aircraft(row['callsign'], row['class'], row['ad'], row['entryfix'], row['gaterwy'], row['entrytime'],
+                             index, row['gate'], row['pushback_time']))
+                ind.append(index)
+
+                D += 1
+        df = aclistsample.loc[ind]
+
+        ldte = []
+        ldtl = []
+        ldtt = []
+        ete = []
+        ett = []
+        etl = []
+        obte = []
+        obtt = []
+        obtl = []
+        utt = []
+        zerotime = []
+        for ac in ac_list:
+            ac.computeflight()
+            if ac.ad == 'a':
+                ldte.append(ac.ldte)
+                ldtl.append(ac.ldtl)
+                ldtt.append(ac.ldtt)
+                ete.append(ac.ete)
+                ett.append(ac.ett)
+                etl.append(ac.etl)
+                zerotime.append(ac.init_entrytime - tb)
+            else:
+                obte.append(ac.obte)
+                obtt.append(ac.obtt)
+                obtl.append(ac.obtl)
+                utt.append(ac.utt)
+        ldte = np.array(ldte)
+        ldtl = np.array(ldtl)
+        ldtt = np.array(ldtt)
+        ete = np.array(ete)
+        ett = np.array(ett)
+        etl = np.array(etl)
+        obte = np.array(obte)
+        obtl = np.array(obtl)
+        utt = np.array(utt)
+        zerotime = np.array(zerotime)
+        R = 3
+        ALL = len(ac_list)
+        # draw(D, A, ac_list)
+        sep = np.zeros((ALL, ALL))
+        for idxi, aci in enumerate(ac_list):
+            for idxj, acj in enumerate(ac_list):
+                sepi = aci.ad.upper() + '-' + aci.sepclass.upper()
+                sepj = acj.ad.upper() + '-' + acj.sepclass.upper()
+                sep[idxi, idxj] = sepclass[sepi][sepj]
+        df['ldte01'] = np.concatenate((np.zeros(D), ldte[:, 0]))
+        # df['ldte02L']=np.concatenate((np.zeros(D),ldte[:,1]))
+        df['ldte02R'] = np.concatenate((np.zeros(D), ldte[:, 2]))
+        df['ldtl01'] = np.concatenate((np.zeros(D), ldtl[:, 0]))
+        # df['ldtl02L']=np.concatenate((np.zeros(D),ldtl[:,1]))
+        df['ldtl02R'] = np.concatenate((np.zeros(D), ldtl[:, 2]))
+        df['ldtt01'] = np.concatenate((np.zeros(D), ldtt[:, 0]))
+        # df['ldtt02L']=np.concatenate((np.zeros(D),ldtt[:,1]))
+        df['ldtt02R'] = np.concatenate((np.zeros(D), ldtt[:, 2]))
+        df['obte'] = np.concatenate((obte, np.zeros(A)))
+        df['obtl'] = np.concatenate((obtl, np.zeros(A)))
+        df['utt01'] = np.concatenate((utt[:, 0], np.zeros(A)))
+        df['utt02L'] = np.concatenate((utt[:, 1], np.zeros(A)))
+        df['zerotime'] = np.concatenate((np.zeros(D), zerotime))
+        self.df=df
+        self.utt =  utt
+        self.ac_list = ac_list
+        self.sep = sep
+        self.A, self.D, self.R, self.ALL = A, D, R, ALL
+        self.ldte, self.ldtl, self.ldtt = ldte, ldtl, ldtt
+        self.ete, self.etl, self.ett = ete, etl, ett
+        self.obte, self.obtt, self.obtl = obte, obtt, obtl
+        # return (ldte, ldtl, ldtt), (ete, etl, ett), (obte, obtt,obtl, utt), ac_list, sep, (A, D, R, ALL), df
+        self.lb_t, self.ub_t = np.concatenate((obte, ete)), np.concatenate((obtl, etl))
+        lb_ud = np.array([lb_ud for i in range(D)])
+        ub_ud = np.array([ub_ud for i in range(D)])
+        lb_ua = np.array([lb_ua for i in range(A)])
+        ub_ua = np.array([ub_ua for i in range(A)])
+        self.lb_u, self.ub_u = np.concatenate((lb_ud, lb_ua)), np.concatenate((ub_ud, ub_ua))
+        self.target = np.concatenate((obtt, ett))
+        self.sep *= k
+        self.ALL = range(ALL)
+
+        dsd = get_random(randtype,self. S, D, p1d, p2d, seed=seed)
+        dsa = get_random(randtype, self.S, A, p1a, p2a, seed=seed)
+        self.ds = np.concatenate((dsd, dsa), axis=1)
+        self.R = range(R)
+        self.S = range(self.S)
 
 def draw(numd, numa, ac_list, res=False):
     rind = {0: '01', 1: '02L', 2: '02R'}
@@ -162,115 +314,6 @@ def draw(numd, numa, ac_list, res=False):
     plt.tight_layout()
     # plt.savefig(fr'./timewindow.svg')
     plt.show()
-
-
-def compute_parameters(dt):
-    # Manually transcribe the data from the image into a DataFrame
-    # Based on the visual inspection, we'll create a dictionary with the data
-
-    # Define the column headers and row labels as seen in the image
-    columns = ['A-H', 'A-M', 'A-L', 'D-H', 'D-M', 'D-L']
-    rows = ['A-H', 'A-M', 'A-L', 'D-H', 'D-M', 'D-L']
-
-    # Define the data as seen in the image
-    data = [
-        [96, 157, 207, 60, 60, 60],  # Data for A-H
-        [60, 69, 123, 60, 60, 60],  # Data for A-M
-        [60, 69, 82, 60, 60, 60],  # Data for A-L
-        [60, 60, 60, 96, 120, 120],  # Data for D-H
-        [60, 60, 60, 60, 60, 60],  # Data for D-M
-        [60, 60, 60, 60, 60, 60]  # Data for D-L
-    ]
-
-    # Create a pandas DataFrame with the data
-    sepclass = pd.DataFrame(data, index=rows, columns=columns)
-
-    aclistsample = pd.read_csv(fr'{parent_directory}\LocalData\ad191203.csv')  # {datadate}
-    ac_list = []
-    cuttime = 1575360000
-
-    A, D = 0, 0
-    ind = []
-
-    for index, row in aclistsample.iterrows():
-        if (row['ad'] == 'a' and row['entrytime'] < (cuttime + dt)):
-            A += 1
-            ac_list.append(
-                Aircraft(row['callsign'], row['class'], row['ad'], row['entryfix'], row['time'], row['entrytime'],
-                         index, row['gate'], row['pushback_time']))
-            ind.append(index)
-
-        elif (row['ad'] == 'd' and row['pushback_time'] < (cuttime + dt)):
-            ac_list.append(
-                Aircraft(row['callsign'], row['class'], row['ad'], row['entryfix'], row['gaterwy'], row['entrytime'],
-                         index, row['gate'], row['pushback_time']))
-            ind.append(index)
-
-            D += 1
-    df = aclistsample.loc[ind]
-
-    ldte = []
-    ldtl = []
-    ldtt = []
-    ete = []
-    ett = []
-    etl = []
-    obte = []
-    obtt = []
-    obtl = []
-    utt = []
-    zerotime = []
-    for ac in ac_list:
-        ac.computeflight()
-        if ac.ad == 'a':
-            ldte.append(ac.ldte)
-            ldtl.append(ac.ldtl)
-            ldtt.append(ac.ldtt)
-            ete.append(ac.ete)
-            ett.append(ac.ett)
-            etl.append(ac.etl)
-            zerotime.append(ac.init_entrytime - tb)
-        else:
-            obte.append(ac.obte)
-            obtt.append(ac.obtt)
-            obtl.append(ac.obtl)
-            utt.append(ac.utt)
-    ldte = np.array(ldte)
-    ldtl = np.array(ldtl)
-    ldtt = np.array(ldtt)
-    ete = np.array(ete)
-    ett = np.array(ett)
-    etl = np.array(etl)
-    obte = np.array(obte)
-    obtl = np.array(obtl)
-    utt = np.array(utt)
-    zerotime = np.array(zerotime)
-    R = 3
-    ALL = len(ac_list)
-    # draw(D, A, ac_list)
-    sep = np.zeros((ALL, ALL))
-    for idxi, aci in enumerate(ac_list):
-        for idxj, acj in enumerate(ac_list):
-            sepi = aci.ad.upper() + '-' + aci.sepclass.upper()
-            sepj = acj.ad.upper() + '-' + acj.sepclass.upper()
-            sep[idxi, idxj] = sepclass[sepi][sepj]
-    df['ldte01'] = np.concatenate((np.zeros(D), ldte[:, 0]))
-    # df['ldte02L']=np.concatenate((np.zeros(D),ldte[:,1]))
-    df['ldte02R'] = np.concatenate((np.zeros(D), ldte[:, 2]))
-    df['ldtl01'] = np.concatenate((np.zeros(D), ldtl[:, 0]))
-    # df['ldtl02L']=np.concatenate((np.zeros(D),ldtl[:,1]))
-    df['ldtl02R'] = np.concatenate((np.zeros(D), ldtl[:, 2]))
-    df['ldtt01'] = np.concatenate((np.zeros(D), ldtt[:, 0]))
-    # df['ldtt02L']=np.concatenate((np.zeros(D),ldtt[:,1]))
-    df['ldtt02R'] = np.concatenate((np.zeros(D), ldtt[:, 2]))
-    df['obte'] = np.concatenate((obte, np.zeros(A)))
-    df['obtl'] = np.concatenate((obtl, np.zeros(A)))
-    df['utt01'] = np.concatenate((utt[:, 0], np.zeros(A)))
-    df['utt02L'] = np.concatenate((utt[:, 1], np.zeros(A)))
-    df['zerotime'] = np.concatenate((np.zeros(D), zerotime))
-    return (ldte, ldtl, ldtt), (ete, etl, ett), (obte, obtt,obtl, utt), ac_list, sep, (A, D, R, ALL), df
-
-
 def saveres(D, A, ac_list, t, y, x, r, S, delta, ds, df, k):
     columns = ['A-H', 'A-M', 'A-L', 'D-H', 'D-M', 'D-L']
     rows = ['A-H', 'A-M', 'A-L', 'D-H', 'D-M', 'D-L']
