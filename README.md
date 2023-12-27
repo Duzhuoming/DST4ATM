@@ -46,7 +46,7 @@ CPLEX支持直接在变量和约束后注释([benders_annotation][ref2])其所�
 - [ ] CPLEX版本
 
 # IB&BC
-[文献][ref1]针对以上问题提出了一种新的求解方法，称为IB&BC，即integer benders & branch cut.通过启发式寻求上界，并close完整的搜索树，获得备选solution pool,可以获得全局最优解。
+文献[2][ref1]针对以上问题提出了一种新的求解方法，称为IB&BC，即integer benders & branch cut.通过启发式寻求上界，并close完整的搜索树，获得备选solution pool,可以获得全局最优解。
 然而gurobi的callback不够完善，只有CPLEX支持自定义剪枝策略，所以目前着手实现CPLEX版本的IB&BC。
 
 目前
