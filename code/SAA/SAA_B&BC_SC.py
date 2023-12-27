@@ -1,16 +1,11 @@
-from aircraft_rso import compute_parameters, saveres, drawres, get_random
-import pandas as pd
+from DST4ATM.code.aircraft_rso import compute_parameters, get_random
 import numpy as np
-import matplotlib.pyplot as plt
-import datetime
 import gurobipy as gp
 from gurobipy import GRB
 
 import warnings
-from joblib import Parallel, delayed
-from tools import mtp
+
 # 计时
-import time
 
 warnings.filterwarnings('ignore')
 # modeltype='DRO'
