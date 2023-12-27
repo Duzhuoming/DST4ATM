@@ -33,7 +33,7 @@ Optimization in Air Traffic Management
 [1] [Two-Stage Stochastic Mixed-Integer Programming with Chance Constraints for Extended Aircraft Arrival Management](https://doi.org/10.1287/trsc.2020.0991)
 ![image](https://github.com/Duzhuoming/DST4ATM/assets/65158088/8e9a326a-aeb8-4dcc-b29a-003f06abd657)
 
-[2][Benders and its sub-problems, p.131](https://openresearch-repository.anu.edu.au/bitstream/1885/203507/1/thesis.pdf)
+[2][Benders and its sub-problems, p.131][ref1]
 ![image](https://github.com/Duzhuoming/DST4ATM/assets/65158088/3b071d51-9db6-43e0-ac7d-b76640c74617)
 
 目前
