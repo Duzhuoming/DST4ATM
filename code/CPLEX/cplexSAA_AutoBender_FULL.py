@@ -54,6 +54,8 @@ S = range(S)
 # with Model("SAA",log_output=True) as m:
 
 m = Model("SAA",log_output=True)
+m.parameters.benders.strategy = 3
+
 # m.parameters.mip.display.set(2)  # 2 是一种常用的中等详细级别
 # m.parameters.mip.tolerances.mipgap = 0.055
 t = m.continuous_var_dict(ALL, name="t")

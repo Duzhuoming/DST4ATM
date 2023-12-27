@@ -54,6 +54,8 @@ S = range(S)
 # with Model("SAA",log_output=True) as m:
 
 m = Model("SAA",log_output=True)
+m.parameters.benders.strategy = 3
+
 # m.parameters.mip.display.set(2)  # 2 是一种常用的中等详细级别
 # m.parameters.mip.tolerances.mipgap = 0.055
 t = m.continuous_var_dict(ALL, name="t")
@@ -127,8 +129,7 @@ if solution:
 else:
     print("求解失败")
     print(m.solve_details)
-# print gap
-print("gap:", m.solve_details.mip_relative_gap)
+
 
 T = np.array([t[i].sv for i in ALL])
 Y = np.array([[y[i, r].sv for r in R] for i in ALL])
