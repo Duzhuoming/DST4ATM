@@ -56,8 +56,7 @@ S = range(S)
 m = Model("SAA",log_output=True)
 m.parameters.benders.strategy = 3
 
-# m.parameters.mip.display.set(2)  # 2 是一种常用的中等详细级别
-# m.parameters.mip.tolerances.mipgap = 0.055
+
 t = m.continuous_var_dict(ALL, name="t")
 y = m.binary_var_matrix(ALL, R, name="y")
 z = m.binary_var_matrix(ALL, ALL, name="z")
@@ -104,13 +103,14 @@ m.add_constraints(
      i != j), "Wake")
 m.add_constraints((delta[s, j, i] + delta[s, i, j] == 1 for s in S for i in ALL for j in ALL if i > j), "delta")
 
+# obj related constr
 m.add_constraints((xmax[i] == alpha[i] + beta[i]) for i in ALL)
 m.add_constraints((alpha[i] >= target[i] - t[i] for i in ALL))
 m.add_constraints((beta[i] >= t[i] - target[i] for i in ALL))
 m.add_constraints((alpha[i] <= target[i] - lb_t[i] for i in ALL))
 m.add_constraints((beta[i] <= ub_t[i] - target[i] for i in ALL))
 m.add_constraints((t[i] == target[i] - alpha[i] + beta[i] for i in ALL))
-# obj
+
 m.add_constraints((Zmax >= m.sum(y[i, r] for i in ALL)) for r in R)
 m.add_constraints((Zmin <= m.sum(y[i, r] for i in ALL)) for r in R)
 

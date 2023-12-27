@@ -64,7 +64,7 @@ CPLEX支持直接在变量和约束后注释([benders_annotation][ref2])其所�
 
 
 目前
-- [x] FULL
+- [x] AUTO, FULL, FULL
 - [ ] USER-simple
 - [ ] USER-partial
 - [ ] USER-multi
