@@ -11,8 +11,8 @@ Optimization in Air Traffic Management
 由于benders 要求二阶段问题是linear program(LP), 而我们目前的模型二阶段有排序变量，故为使用benders，我们需要将二阶段问题进行线性松弛(LP relaxation)
 
 正常情况下[^1], 一阶段完全求解结束后，可以固定一阶段决策，在二阶段重新引入整数约束，再次求解，使得二阶段相关变量恢复整数的性质。
-然而，我们的问题比较特殊，并不是所有一阶段决策都可以正常求解出二阶段决策。 所以，存在一些情况使用LP relaxation后，二阶段无解。
-这种情况下,根据[文献][ref1]，应当添加一些约束重新求解，但是文献没有表述的很清楚具体是什么约束,所以比较尴尬。
+然而，我们的问题比较特殊，并不是所有一阶段决策都可以正常求解出二阶段决策。 所以，存在一些情况使用LP relaxation后，固定一阶段决策，二阶段无解。
+这种情况下,根据文献[^2]，应当添加一些约束重新求解，但是文献没有表述的很清楚具体是什么约束,所以比较尴尬。
 或者想办法把这个一阶段解屏蔽掉，重新求解，但是屏蔽一阶段解好像也不是一件容易的事情。
 
 
@@ -52,3 +52,4 @@ Optimization in Air Traffic Management
 [ref1]:https://openresearch-repository.anu.edu.au/bitstream/1885/203507/1/thesis.pdf
 
 [^1]: relatively complete recourse.
+[^2]:[Benders and its sub-problems, Sec. 4.2][ref1] In case the solution violates previous Benders cuts, they add a constraint and restart; otherwise, the algorithm finishes.
