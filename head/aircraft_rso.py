@@ -2,12 +2,16 @@
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-# from DST4ATM.code.fltpred import *
+# from .fltpred import *
+from pathlib import Path
+current_directory = Path().cwd()
 
-db_cdo_gdsj = pd.read_csv(fr'D:\nuaadzm\PycharmProjects\detour\database\sa_cdo_gdsj.csv', header=None)
+parent_directory = current_directory.parent.parent.parent
 
-map = pd.read_excel(r'D:\nuaadzm\PycharmProjects\detour\database\gatemap_enhance.xlsx')
-# feaset=pd.read_excel(r'D:\nuaadzm\PycharmProjects\detour\ML\allset1112.xlsx')
+db_cdo_gdsj = pd.read_csv(fr'{parent_directory}\LocalData\sa_cdo_gdsj.csv', header=None)
+
+map = pd.read_excel(fr'{parent_directory}\LocalData\gatemap_enhance.xlsx')
+# feaset=pd.read_excel(fr'{parent_directory}\LocalData\allset1112.xlsx')
 
 # 1st column type: str
 map['gate'] = map['gate'].astype(str)
@@ -181,7 +185,7 @@ def compute_parameters(dt):
     # Create a pandas DataFrame with the data
     sepclass = pd.DataFrame(data, index=rows, columns=columns)
 
-    aclistsample = pd.read_csv(fr'D:\nuaadzm\PycharmProjects\detour\tendays\ad191203.csv')  # {datadate}
+    aclistsample = pd.read_csv(fr'{parent_directory}\LocalData\ad191203.csv')  # {datadate}
     ac_list = []
     cuttime = 1575360000
 

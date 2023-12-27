@@ -11,10 +11,15 @@ from sklearn.tree import plot_tree
 from joblib import dump, load
 import gurobipy as gp
 from gurobipy import GRB
+import os
+from pathlib import Path
+current_directory = Path().cwd()
 
+parent_directory = current_directory.parent.parent.parent
 
-feaset = pd.read_excel(r'D:\nuaadzm\PycharmProjects\uncertain\LocalData\allset1112.xlsx')
-regressor = load(r'D:\nuaadzm\PycharmProjects\uncertain\LocalData\model_pretrain_py312.joblib')
+print(parent_directory)
+feaset = pd.read_excel(fr'{parent_directory}\LocalData\allset1112.xlsx')
+regressor = load(fr'{parent_directory}\LocalData\model_pretrain_py312.joblib')
 
 
 

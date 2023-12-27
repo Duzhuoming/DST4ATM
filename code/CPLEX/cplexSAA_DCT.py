@@ -1,14 +1,11 @@
-from DST4ATM.code.aircraft_rso import compute_parameters, saveres, drawres, get_random
-import pandas as pd
+from DST4ATM.head.aircraft_rso import compute_parameters, saveres, drawres, get_random
 import numpy as np
 
 import warnings
-from joblib import Parallel, delayed
 
 from docplex.mp.model import Model
 
 # 计时
-import time
 
 warnings.filterwarnings('ignore')
 # modeltype='DRO'

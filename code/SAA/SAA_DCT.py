@@ -1,4 +1,4 @@
-from DST4ATM.code.aircraft_rso import compute_parameters, saveres, drawres, get_random
+from DST4ATM.head.aircraft_rso import compute_parameters, saveres, drawres, get_random
 import numpy as np
 
 import gurobipy as gp
