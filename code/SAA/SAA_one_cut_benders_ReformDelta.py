@@ -1,4 +1,4 @@
-from DST4ATM.head import compute_parameters, get_random
+from DST4ATM.optbase import compute_parameters, get_random
 import numpy as np
 import gurobipy as gp
 from gurobipy import GRB

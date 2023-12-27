@@ -1,4 +1,4 @@
-from DST4ATM.head.aircraft_rso import compute_parameters, saveres, drawres, get_random
+from DST4ATM.optbase.aircraft_rso import compute_parameters, saveres, drawres, get_random
 import pandas as pd
 import numpy as np
 
