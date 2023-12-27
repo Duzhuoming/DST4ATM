@@ -39,6 +39,12 @@ Optimization in Air Traffic Management
 目前
 - [x] gurobi版本
 - [ ] CPLEX版本
+## 3. CPLEX annotated Benders
+CPLEX支持直接在变量和约束后注释([benders_annotation][ref2])其所属是主问题还是子问题，从而自动进行分解[^3]。此外，利用benders_annotation，CPLEX还可以将一个子问题再次拆解为多个子问题进行求解
+
+目前
+- [ ] CPLEX版本
+
 # IB&BC
 [文献][ref1]针对以上问题提出了一种新的求解方法，称为IB&BC，即integer benders & branch cut.通过启发式寻求上界，并close完整的搜索树，获得备选solution pool,可以获得全局最优解。
 然而gurobi的callback不够完善，只有CPLEX支持自定义剪枝策略，所以目前着手实现CPLEX版本的IB&BC。
@@ -50,6 +56,7 @@ Optimization in Air Traffic Management
 
 
 [ref1]:https://openresearch-repository.anu.edu.au/bitstream/1885/203507/1/thesis.pdf
-
+[ref2]:https://github.com/IBMDecisionOptimization/docplex-examples/blob/master/examples/mp/jupyter/Benders_decomposition.ipynb
 [^1]: relatively complete recourse.
 [^2]:[Benders and its sub-problems, Sec. 4.2][ref1] In case the solution violates previous Benders cuts, they add a constraint and restart; otherwise, the algorithm finishes.
+[^3]:如果不加以注释，CPLEX将自动把整数变量放第一阶段，连续变量全放第二阶段。
