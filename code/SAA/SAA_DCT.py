@@ -7,7 +7,7 @@ from docplex.mp.model import Model
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'
-timerange = 300
+timerange = 1000
 S = 10
 weight = 1
 parm = Parameters(timerange, S)

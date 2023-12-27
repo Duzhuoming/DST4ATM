@@ -11,19 +11,18 @@ weight = 1
 parm = Parameters(timerange, S)
 parm.compute_parameters()
 # 解析parm
-ldte, ldtl, ldtt=parm.ldte, parm.ldtl, parm.ldtt
-ete, etl, ett=parm.ete, parm.etl, parm.ett
-obte, obtt, obtl, utt=parm.obte, parm.obtt, parm.obtl, parm.utt
-ac_list, sep, A, D, R, ALL, df=parm.ac_list, parm.sep, parm.A, parm.D, parm.R, parm.ALL, parm.df
-lb_t, ub_t,lb_u, ub_u  = parm.lb_t, parm.ub_t,parm.lb_u, parm.ub_u
+ldte, ldtl, ldtt = parm.ldte, parm.ldtl, parm.ldtt
+ete, etl, ett = parm.ete, parm.etl, parm.ett
+obte, obtt, obtl, utt = parm.obte, parm.obtt, parm.obtl, parm.utt
+ac_list, sep, A, D, R, ALL, df = parm.ac_list, parm.sep, parm.A, parm.D, parm.R, parm.ALL, parm.df
+lb_t, ub_t, lb_u, ub_u = parm.lb_t, parm.ub_t, parm.lb_u, parm.ub_u
 target = parm.target
 ds = parm.ds
-S,k=parm.S,parm.k
+S, k = parm.S, parm.k
 
-
-m = Model("SAA",log_output=True)
-m.parameters.benders.strategy = 3
-
+m = Model("SAA", log_output=True)
+m.parameters.benders.strategy = 1
+# -1 OFF 0 AUTO 1 USER 2 WORKERS 3 FULL
 
 t = m.continuous_var_dict(ALL, name="t")
 y = m.binary_var_matrix(ALL, R, name="y")
@@ -36,11 +35,18 @@ alpha = m.continuous_var_dict(ALL, name="alpha")
 beta = m.continuous_var_dict(ALL, name="beta")
 Zmax = m.continuous_var(name="Zmax")
 Zmin = m.continuous_var(name="Zmin")
+delta = m.binary_var_cube(S, ALL, ALL, name="z")
 
 x = m.continuous_var_matrix(S, ALL, name="x")
 r = m.continuous_var_matrix(S, ALL, name="r")
-delta = m.binary_var_cube(S, ALL, ALL, name="z")
-
+# 遍历所有变量
+for variable in m.iter_variables():
+    # 根据变量的名称设置Benders注解
+    if "x" in variable.name:
+        variable.benders_annotation = 1  # 比如分配到第一个子问题
+    elif "r" in variable.name:
+        variable.benders_annotation = 1  # 比如分配到第二个子问题
+    # 可以添加更多的条件分支来处理其他变量
 # 创建三维二元变量立方体
 # var_cube = {(i, j, k): mdl.binary_var(name=f"var_{i}_{j}_{k}")
 #             for i in Dim1 for j in Dim2 for k in Dim3}
@@ -68,9 +74,25 @@ m.add_constraints((r[s, i] - x[s, i] >= lb_u[i] for s in S for i in ALL), "lb_u"
 m.add_constraints((x[s, i] - r[s, i] >= -ub_u[i] for s in S for i in ALL), "ub_u")
 m.add_constraints(
     (r[s, j] >= r[s, i] + z[i, j] * sep[i, j] - delta[s, j, i] * 10000 for s in S for i in ALL for j in ALL if
-     i != j), "Wake")
+     i != j), "wake")
 m.add_constraints((delta[s, j, i] + delta[s, i, j] == 1 for s in S for i in ALL for j in ALL if i > j), "delta")
 
+# 遍历所有约束
+for constraint in m.iter_constraints():
+    # 根据约束的名称设置Benders注解
+    # print(constraint.name)
+    if type(constraint.name)==str:
+        if "x" in constraint.name:
+            constraint.benders_annotation = 1  # 比如分配到第一个子问题
+        elif "lb_u" in constraint.name:
+            constraint.benders_annotation = 1  # 比如分配到第二个子问题
+        elif "ub_u" in constraint.name:
+            constraint.benders_annotation = 1  # 比如分配到第二个子问题
+        elif "wake" in constraint.name:
+            constraint.benders_annotation = 1  # 比如分配到第二个子问题
+        elif "delta" in constraint.name:
+            constraint.benders_annotation = 1  # 比如分配到第二个子问题
+    # 可以添加更多的条件分支来处理其他约束
 # obj related constr
 m.add_constraints((xmax[i] == alpha[i] + beta[i]) for i in ALL)
 m.add_constraints((alpha[i] >= target[i] - t[i] for i in ALL))
@@ -87,7 +109,7 @@ obj2 = Zmax - Zmin
 obj3 = m.sum(r[s, i] - x[s, i] for s in S for i in ALL)
 m.minimize(weight * obj1 + obj2 + 1 / len(S) * obj3)
 m.print_information()
-m.add_kpi(obj3,'2nd cost')
+m.add_kpi(obj3, '2nd cost')
 
 solution = m.solve()
 m.report()
@@ -98,7 +120,6 @@ else:
     print("求解失败")
     print(m.solve_details)
 
-
 T = np.array([t[i].sv for i in ALL])
 Y = np.array([[y[i, r].sv for r in R] for i in ALL])
 X = np.array([[x[s, i].sv for i in ALL] for s in S])
@@ -106,12 +127,9 @@ RR = np.array([[r[s, i].sv for i in ALL] for s in S])
 DELTA = np.array([[[delta[s, j, i].sv for i in ALL] for j in ALL] for s in S])
 ALPHA = np.array([alpha[i].sv for i in ALL])
 BETA = np.array([beta[i].sv for i in ALL])
-Z= np.array([z[i, j].sv for i in ALL for j in ALL])
+Z = np.array([z[i, j].sv for i in ALL for j in ALL])
 
-S=len(S)
+S = len(S)
 
-dsd = get_random(randtype, S, D, p1d, p2d, seed=42)
-dsa = get_random(randtype, S, A, p1a, p2a, seed=42)
-ds = np.concatenate((dsd, dsa), axis=1)
 ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, S, DELTA, ds, df, k)
 drawres(D, A, ac_list, S, obte, obtl, ete, etl)
