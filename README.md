@@ -30,7 +30,8 @@ Optimization in Air Traffic Management
 - [ ] gurobi版本
 - [ ] CPLEX版本
 ## 2. branch & benders cut
-开始求解主问题，当发现MIP solution时，使用callback功能，求解子问题，使用求解器的lazy cut方法,添加benders cut
+开始求解主问题，当发现MIP solution时，使用callback功能，求解子问题，使用求解器的lazy cut方法,添加benders cut。
+
 具体可以参考：
 
 [1] [Two-Stage Stochastic Mixed-Integer Programming with Chance Constraints for Extended Aircraft Arrival Management](https://doi.org/10.1287/trsc.2020.0991)
@@ -42,7 +43,7 @@ Optimization in Air Traffic Management
 目前
 - [x] gurobi版本
 - [ ] CPLEX版本
-## 3. CPLEX annotated Benders
+# CPLEX annotated Benders
 CPLEX支持直接在变量和约束后注释([benders_annotation][ref2])其所属是主问题还是子问题，从而自动进行分解[^3]。此外，利用benders_annotation，CPLEX还可以将一个子问题再次拆解为多个子问题进行求解.
 
 CPLEX supports 4 values for this [parameter][ref3], from -1 to 3:
