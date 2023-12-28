@@ -5,8 +5,8 @@ from docplex.mp.model import Model
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'
-timerange = 300
-S = 10
+timerange = 600
+S = 100
 weight = 1
 parm = Parameters(timerange, S)
 parm.compute_parameters()
@@ -21,8 +21,12 @@ ds = parm.ds
 S, k = parm.S, parm.k
 
 m = Model("SAA", log_output=True)
-m.parameters.benders.strategy = 1
-# -1 OFF 0 AUTO 1 USER 2 WORKERS 3 FULL
+m.parameters.benders.strategy = 2
+# -1 OFF
+# 0 AUTO
+# 1 USER
+# 2 WORKERS
+# 3 FULL
 
 t = m.continuous_var_dict(ALL, name="t")
 y = m.binary_var_matrix(ALL, R, name="y")

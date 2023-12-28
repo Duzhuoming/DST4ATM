@@ -8,8 +8,8 @@ from docplex.mp.model import Model
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'
-timerange = 300
-S = 10
+timerange = 3000
+S = 1
 weight = 1
 parm = Parameters(timerange, S)
 parm.compute_parameters()
@@ -26,8 +26,8 @@ S,k=parm.S,parm.k
 mp = gp.Model("MP")
 mp.setParam('LazyConstraints', 1)
 # 设置解池相关参数
-mp.setParam(GRB.Param.PoolSolutions, 10)  # 存储10个最优解
-mp.setParam(GRB.Param.PoolSearchMode, 1)  # 搜索更多解
+# mp.setParam(GRB.Param.PoolSolutions, 10)  # 存储10个最优解
+# mp.setParam(GRB.Param.PoolSearchMode, 1)  # 搜索更多解
 
 t = mp.addVars(ALL, vtype=GRB.CONTINUOUS, name="t")
 y = mp.addVars(ALL, R, vtype=GRB.BINARY, name="y")
@@ -186,7 +186,7 @@ def postbsp(t,z):
         ALL if i != j)
     sp.update()
     num_constrs1 = sp.NumConstrs
-    sp.setObjective(gp.quicksum(r[s, i] - x[s, i]-lb_u[i] for s in S for i in ALL), GRB.MINIMIZE)
+    sp.setObjective(gp.quicksum(r[s, i] - x[s, i]for s in S for i in ALL), GRB.MINIMIZE)
 
     sp.optimize()
     X = np.array([[x[s, i].x for i in ALL] for s in S])
@@ -196,7 +196,7 @@ def postbsp(t,z):
 # 获取解池中的解的数量
 solution_count = mp.SolCount
 print(f"Number of solutions found: {solution_count}")
-mp.setParam(GRB.Param.SolutionNumber,4)
+mp.setParam(GRB.Param.SolutionNumber,0)
 
 # # 获取t,y,x,r,delta
 T = np.array([t[i].Xn for i in ALL])
