@@ -133,7 +133,6 @@ ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, S, DELTA, ds, df, k)
 drawres(D, A, ac_list, S, obte, obtl, ete, etl)
 
 
-import gurobipy as gp
 
 # Assuming you have a Gurobi model named 'model'
 # Initialize flags
@@ -158,7 +157,7 @@ elif is_qcp:
 else:
     print("This is a Linear Program (LP)")
 
-
+# m.isMIP
 # 获取解池中的解的数量
 solution_count = m.SolCount
 print(f"Number of solutions found: {solution_count}")
