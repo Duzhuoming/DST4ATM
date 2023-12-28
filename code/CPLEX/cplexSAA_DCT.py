@@ -5,8 +5,9 @@ from docplex.mp.model import Model
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'
-timerange = 3000
+timerange =600
 S = 10
+
 weight = 1
 parm = Parameters(timerange, S)
 parm.compute_parameters()
@@ -22,8 +23,7 @@ S,k=parm.S,parm.k
 
 
 m = Model("SAA",log_output=True)
-# m.parameters.mip.display.set(2)  # 2 是一种常用的中等详细级别
-# m.parameters.mip.tolerances.mipgap = 0.055
+
 t = m.continuous_var_dict(ALL, name="t")
 y = m.binary_var_matrix(ALL, R, name="y")
 z = m.binary_var_matrix(ALL, ALL, name="z")
@@ -109,6 +109,6 @@ Z= np.array([z[i, j].sv for i in ALL for j in ALL])
 
 S=len(S)
 
-
-ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, S, DELTA, ds, df, k)
-drawres(D, A, ac_list, S, obte, obtl, ete, etl)
+#
+# ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, S, DELTA, ds, df, k)
+# drawres(D, A, ac_list, S, obte, obtl, ete, etl)

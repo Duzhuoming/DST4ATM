@@ -5,8 +5,8 @@ from docplex.mp.model import Model
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'
-timerange = 600
-S = 100
+timerange = 300
+S = 10
 weight = 1
 parm = Parameters(timerange, S)
 parm.compute_parameters()
@@ -21,7 +21,7 @@ ds = parm.ds
 S, k = parm.S, parm.k
 
 m = Model("SAA", log_output=True)
-m.parameters.benders.strategy = 2
+m.parameters.benders.strategy =2
 # -1 OFF
 # 0 AUTO
 # 1 USER
@@ -39,17 +39,19 @@ alpha = m.continuous_var_dict(ALL, name="alpha")
 beta = m.continuous_var_dict(ALL, name="beta")
 Zmax = m.continuous_var(name="Zmax")
 Zmin = m.continuous_var(name="Zmin")
-delta = m.binary_var_cube(S, ALL, ALL, name="z")
+delta = m.binary_var_cube(S, ALL, ALL, name="delta")
 
 x = m.continuous_var_matrix(S, ALL, name="x")
 r = m.continuous_var_matrix(S, ALL, name="r")
 # 遍历所有变量
 for variable in m.iter_variables():
     # 根据变量的名称设置Benders注解
-    if "x" in variable.name:
+    if "x_" in variable.name:
         variable.benders_annotation = 1  # 比如分配到第一个子问题
-    elif "r" in variable.name:
+    elif "r_" in variable.name:
         variable.benders_annotation = 1  # 比如分配到第二个子问题
+    # elif "delta_" in variable.name:
+    #     variable.benders_annotation = 1  # 比如分配到第二个子问题
     # 可以添加更多的条件分支来处理其他变量
 # 创建三维二元变量立方体
 # var_cube = {(i, j, k): mdl.binary_var(name=f"var_{i}_{j}_{k}")
@@ -65,7 +67,7 @@ for i in ALL:
         if ac_list[i].entryfix == 'GYA':
             m.add_constraint(y[i, 2] == 0)
 
-m.add_constraints((t[i] >= lb_t[i] for i in ALL), "lb")
+cons_lb=m.add_constraints((t[i] >= lb_t[i] for i in ALL), "lb")
 m.add_constraints((t[i] <= ub_t[i] for i in ALL), "ub")
 m.add_constraints((m.sum(y[i, r] for r in R) == 1 for i in ALL), "unique1")
 m.add_constraints(z[i, j] >= y[i, r] + y[j, r] - 1 for i in ALL for j in ALL for r in R if i != j)
@@ -73,7 +75,7 @@ m.add_constraints(z[i, j] >= y[i, r] + y[j, r] - 1 for i in ALL for j in ALL for
 m.add_constraints(z[i, j] == z[j, i] for i in ALL for j in ALL if i > j)
 
 # stage 2
-m.add_constraints((x[s, i] == t[i] + ds[s, i] for s in S for i in ALL), "x")
+cons_x=m.add_constraints((x[s, i] == t[i] + ds[s, i] for s in S for i in ALL), "x")
 m.add_constraints((r[s, i] - x[s, i] >= lb_u[i] for s in S for i in ALL), "lb_u")
 m.add_constraints((x[s, i] - r[s, i] >= -ub_u[i] for s in S for i in ALL), "ub_u")
 m.add_constraints(
@@ -87,15 +89,15 @@ for constraint in m.iter_constraints():
     # print(constraint.name)
     if type(constraint.name)==str:
         if "x" in constraint.name:
-            constraint.benders_annotation = 1  # 比如分配到第一个子问题
+            constraint.benders_annotation = 1
         elif "lb_u" in constraint.name:
-            constraint.benders_annotation = 1  # 比如分配到第二个子问题
+            constraint.benders_annotation = 1
         elif "ub_u" in constraint.name:
-            constraint.benders_annotation = 1  # 比如分配到第二个子问题
+            constraint.benders_annotation = 1
         elif "wake" in constraint.name:
-            constraint.benders_annotation = 1  # 比如分配到第二个子问题
+            constraint.benders_annotation = 1
         elif "delta" in constraint.name:
-            constraint.benders_annotation = 1  # 比如分配到第二个子问题
+            constraint.benders_annotation = 1
     # 可以添加更多的条件分支来处理其他约束
 # obj related constr
 m.add_constraints((xmax[i] == alpha[i] + beta[i]) for i in ALL)
@@ -134,6 +136,6 @@ BETA = np.array([beta[i].sv for i in ALL])
 Z = np.array([z[i, j].sv for i in ALL for j in ALL])
 
 S = len(S)
-
-ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, S, DELTA, ds, df, k)
-drawres(D, A, ac_list, S, obte, obtl, ete, etl)
+#
+# ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, S, DELTA, ds, df, k)
+# drawres(D, A, ac_list, S, obte, obtl, ete, etl)

@@ -22,7 +22,7 @@ S,k=parm.S,parm.k
 
 
 m = Model("SAA",log_output=True)
-m.parameters.benders.strategy =0
+m.parameters.benders.strategy =3
 
 # -1 OFF 0 AUTO 1 USER 2 WORKERS 3 FULL
 

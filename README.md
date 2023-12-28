@@ -13,6 +13,8 @@ Optimization in Air Traffic Management
 目前
 - [x] gurobi版本
 - [x] CPLEX版本
+
+cplex比gurobi直接求快
 # 基于LP relaxation：
 根据二阶段随机规划的特点，容易想到自然的将问题第一阶段作为bender主问题，第二阶段作为bender子问题。
 
@@ -49,6 +51,8 @@ Optimization in Air Traffic Management
 目前
 - [x] gurobi版本
 - [ ] CPLEX版本
+ 
+这个比直接求快 但是有以上问题
 
 # benders problem re-division  
 
@@ -62,15 +66,19 @@ Optimization in Air Traffic Management
 - [ ] gurobi版本-传统benders dual
 - [ ] CPLEX版本
 
+这个直接有bug
 
+# CPLEX  Benders annotation & parameters
+CPLEX支持直接在变量和约束后注释([benders_annotation][ref2])其所属是主问题还是子问题，根据[parameters.benders.strategy][ref3]，从而自动进行分解。
 
-# CPLEX annotated Benders
-CPLEX支持直接在变量和约束后注释([benders_annotation][ref2])其所属是主问题还是子问题，从而自动进行分解[^3]。此外，利用benders_annotation，CPLEX还可以将一个子问题再次拆解为多个子问题进行求解.
+CPLEX supports 4 values for this , from -1 to 3:
 
-CPLEX supports 4 values for this [parameter][ref3], from -1 to 3:
+- -1 OFF ：忽略所有注释，关闭Benders
+-  0 AUTO：如果没有注释，关闭benders;如果有注释，等于WORKERS,
+- 1 USER： 完全按照用户注释
+- 2 WORKERS： 接受主问题注释（而不保留子问题注释），而将子问题尽可能的进一步分解。
+- 3 FULL：忽略所有注释，把整数变量放第一阶段，连续变量全放第二阶段。（往往最慢）
 
-OFF (default value) will ignore Benders.
-AUTO, USER, WORKERS, FULL will enable Benders.
 
 根据，随机规划第二阶段所有场景的组合方式，benders cut 又有如下分类：
 
@@ -80,7 +88,7 @@ AUTO, USER, WORKERS, FULL will enable Benders.
 | partially aggregated cut | 场景聚类， 一类场景为一个子问题 |
 | multi cut                | 一个场景一个子问题        |
 
-
+故，利用benders_annotation，CPLEX还可以手动（USER）将一个子问题再次拆解为多个子问题进行求解（以期加速求解）
 
 目前
 - [x] AUTO, FULL
@@ -88,6 +96,8 @@ AUTO, USER, WORKERS, FULL will enable Benders.
 - [x] USER-simple
 - [ ] USER-partial
 - [ ] USER-multi
+
+目前测试下来还不如直接求解块
 
 # IB&BC
 文献[2][ref1]针对以上问题提出了一种新的求解方法，称为IB&BC，即integer benders & branch cut.通过启发式寻求上界，并close完整的搜索树，获得备选solution pool,可以获得全局最优解。
@@ -103,4 +113,3 @@ AUTO, USER, WORKERS, FULL will enable Benders.
 [ref3]:https://www.ibm.com/docs/zh/icos/22.1.1?topic=parameters-benders-strategy
 [^1]: relatively complete recourse.
 [^2]:[Benders and its sub-problems, Sec. 4.2][ref1] In case the solution violates previous Benders cuts, they add a constraint and restart; otherwise, the algorithm finishes.
-[^3]:如果不加以注释，CPLEX将自动把整数变量放第一阶段，连续变量全放第二阶段。
