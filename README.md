@@ -27,9 +27,6 @@ Optimization in Air Traffic Management
 * 或者直接把infeasible的场景去除，得到部分二阶段场景的解。
 
 但是即使二阶段问题解决了，这个方法始终是一个非精确的方法，因为二阶段benders cut是基于LP relaxation的，使得原问题的潜在的最优整数解，在一阶段被提早剪枝(prune)。
-
-事实上，bender 分解并不要求一定要按原问一二阶段问划分bender主问题子问题
-于是，可以考虑将二阶段问题的整数约束放在一阶段，这样就可以保证二阶段为LP，可以直接正常应用benders。但是，这样分解方式破坏了原来的问题结构，可能会导致求解效率降低。
 ## 1. 传统benders dual
 主问题求解完毕后，再去做子问题
 ![image](https://github.com/Duzhuoming/DST4ATM/assets/65158088/903515f1-4492-49ad-9176-dbe254a8fae3)
@@ -53,7 +50,11 @@ Optimization in Air Traffic Management
 - [x] gurobi版本
 - [ ] CPLEX版本
 
-## 3. benders problem re-division  
+# benders problem re-division  
+
+事实上，bender 分解并不要求一定要按原问一二阶段问划分bender主问题子问题
+于是，可以考虑将二阶段问题的整数约束放在一阶段，这样就可以保证二阶段为LP，可以直接正常应用benders。但是，这样分解方式破坏了原来的问题结构，可能会导致求解效率降低。
+
 考虑将随机规划第二阶段所有排序变量放在第一阶段，这样可以保证第二阶段为LP，可以直接正常应用benders。
 
 目前
