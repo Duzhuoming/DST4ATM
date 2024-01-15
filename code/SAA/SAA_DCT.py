@@ -6,7 +6,7 @@ import warnings
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'
-timerange = 600
+timerange = 1000
 S = 10
 weight = 1
 parm = Parameters(timerange, S)

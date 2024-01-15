@@ -35,7 +35,7 @@ cplex比gurobi直接求快
 具体可以参考:https://blog.csdn.net/weixin_43509834/article/details/124617203
 
 目前
-- [x] gurobi版本 -solved by @jian li
+- [x] gurobi版本 -solved by @iMiooo
 - [ ] CPLEX版本
 ## 2. branch & benders cut
 开始求解主问题，当发现MIP solution时，使用callback功能，求解子问题，使用求解器的lazy cut方法,添加benders cut。
