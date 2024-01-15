@@ -1,4 +1,6 @@
 # traditional benders by gurobi
+import time
+
 import gurobipy as gp
 from gurobipy import GRB
 from DST4ATM.optbase.aircraft_rso import Parameters, saveres, drawres
@@ -7,7 +9,7 @@ import numpy as np
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'
-timerange = 1000
+timerange =1000
 S = 10
 weight = 1
 parm = Parameters(timerange, S)
@@ -23,7 +25,7 @@ ds = parm.ds
 S,k=parm.S,parm.k
 
 mp = gp.Model("MP")
-mp.setParam('LazyConstraints', 1)
+# mp.setParam('LazyConstraints', 1)
 mp.setParam('OutputFlag', 0)
 # 设置解池相关参数
 # mp.setParam(GRB.Param.PoolSolutions, 10)  # 存储10个最优解
@@ -76,9 +78,10 @@ mp.setObjective(obj2 + obj1 * weight + 1 / len(S) * q, GRB.MINIMIZE)
 
 def makesp(sol_dict={},relax=True):
     sp = gp.Model("sp")
+    sp.setParam('OutputFlag', 0)
+
     sp.setParam('PreCrush', 1)
     sp.setParam('InfUnbdInfo', 1)
-    sp.setParam('OutputFlag', 0)
 
     x = sp.addVars(S, ALL, vtype=GRB.CONTINUOUS, name="x")
     r = sp.addVars(S, ALL, vtype=GRB.CONTINUOUS, name="r")
@@ -106,7 +109,7 @@ def makesp(sol_dict={},relax=True):
 iter = 0
 # 设置阈值gap
 gap = 1e-10
-
+tic=time.time()
 while True:
     # 求解主问题
     mp.optimize()
@@ -140,8 +143,12 @@ while True:
             # 计算cut的系数
             optcut = sum(duals * rhs)
             mp.addConstr(optcut <= q, name='optcut')
+            print(mp.NumConstrs)
+            # mp.update()
+
         else:
             # no:break
+            toc=time.time()
             break
 
     # 如果子问题无界,添加 Benders feasibility cut
@@ -173,7 +180,6 @@ def postbsp(t,z):
         r[s, j] - r[s, i] + delta[s, j, i] * 10000 >= sep[i, j] * z[i, j] for s in S for i in ALL for j in
         ALL if i != j)
     sp.update()
-    num_constrs1 = sp.NumConstrs
     sp.setObjective(gp.quicksum(r[s, i] - x[s, i]for s in S for i in ALL), GRB.MINIMIZE)
 
     sp.optimize()
@@ -190,15 +196,18 @@ mp.setParam(GRB.Param.SolutionNumber,0)
 T = np.array([t[i].Xn for i in ALL])
 Y = np.array([[y[i, r].Xn for r in R] for i in ALL])
 Z = np.array([[z[i, j].Xn for j in ALL] for i in ALL])
-sp2,X,RR,DELTA=postbsp(T,Z)
-
-TrueObj=mp.objVal-1/len(S)*q.Xn+1/len(S)*sp2.objVal
-print('TrueObj:',TrueObj)
 ALPHA = np.array([alpha[i].Xn for i in ALL])
 BETA = np.array([beta[i].Xn for i in ALL])
 
-S = len(S)
+sp2,X,RR,DELTA=postbsp(T,Z)
+
+TrueObj=mp.objVal-1/len(S)*q.Xn+1/len(S)*sp2.objVal
+print('s1:',mp.objVal-1/len(S)*q.Xn)
+print('TrueObj:',TrueObj)
+print('run time:',toc-tic)
+
+
 #
-ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, S, DELTA, ds, df, k)
-drawres(D, A, ac_list, S, obte, obtl, ete, etl)
+ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, len(S), DELTA, ds, df, k)
+drawres(D, A, ac_list, len(S), obte, obtl, ete, etl)
 
