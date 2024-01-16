@@ -3,12 +3,11 @@ from gurobipy import GRB
 from DST4ATM.optbase.aircraft_rso import Parameters, saveres, drawres
 import numpy as np
 import warnings
-from docplex.mp.model import Model
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'
-timerange = 1000
-S = 1
+timerange = 600
+S = 10
 weight = 1
 parm = Parameters(timerange, S)
 parm.compute_parameters()

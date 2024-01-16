@@ -1,14 +1,15 @@
-import numpy as np
+# traditional benders by gurobi
+import time
+
 import gurobipy as gp
 from gurobipy import GRB
 from DST4ATM.optbase.aircraft_rso import Parameters, saveres, drawres
-import numpy as np
 import warnings
-from docplex.mp.model import Model
+import numpy as np
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'
-timerange = 1000
+timerange =1000
 S = 10
 weight = 1
 parm = Parameters(timerange, S)
@@ -24,7 +25,8 @@ ds = parm.ds
 S,k=parm.S,parm.k
 
 mp = gp.Model("MP")
-mp.setParam('LazyConstraints', 1)
+# mp.setParam('LazyConstraints', 1)
+mp.setParam('OutputFlag', 0)
 # 设置解池相关参数
 # mp.setParam(GRB.Param.PoolSolutions, 10)  # 存储10个最优解
 # mp.setParam(GRB.Param.PoolSearchMode, 1)  # 搜索更多解
@@ -34,9 +36,6 @@ y = mp.addVars(ALL, R, vtype=GRB.BINARY, name="y")
 z = mp.addVars(ALL, ALL, vtype=GRB.BINARY, name="z")
 q=mp.addVar(vtype=GRB.CONTINUOUS, lb=0, name="q")
 xmax = mp.addVars(ALL, vtype=GRB.CONTINUOUS, name="xmax")
-xmax2 = mp.addVar(vtype=GRB.CONTINUOUS, name="xmax2")
-xmax3 = mp.addVar(vtype=GRB.CONTINUOUS, name="xmax3")
-xmax4 = mp.addVar(vtype=GRB.CONTINUOUS, name="xmax4")
 alpha = mp.addVars(ALL, vtype=GRB.CONTINUOUS, lb=0, name="alpha")
 beta = mp.addVars(ALL, vtype=GRB.CONTINUOUS, lb=0, name="beta")
 Zmax = mp.addVar(vtype=GRB.CONTINUOUS, name="Zmax")
@@ -61,7 +60,6 @@ mp.addConstrs(z[i, j] >= y[i, r] + y[j, r] - 1 for i in ALL for j in ALL for r i
 
 mp.addConstrs(z[i, j] == z[j, i] for i in ALL for j in ALL if i > j)
 
-# obj
 mp.addConstrs((Zmax >= gp.quicksum(y[i, r] for i in ALL)) for r in R)
 mp.addConstrs((Zmin <= gp.quicksum(y[i, r] for i in ALL)) for r in R)
 
@@ -72,18 +70,18 @@ mp.addConstrs(beta[i] <= ub_t[i] - target[i] for i in ALL)
 mp.addConstrs(t[i] == target[i] - alpha[i] + beta[i] for i in ALL)
 mp.addConstrs((xmax[i] == alpha[i] + beta[i]) for i in ALL)
 
+# obj
 obj1 = sum(xmax[i] for i in ALL)
 obj2 = Zmax - Zmin
 # obj3 = gp.quicksum(r[s, i] - x[s, i] for s in S for i in ALL)
 mp.setObjective(obj2 + obj1 * weight + 1 / len(S) * q, GRB.MINIMIZE)
-# time limit
-mp.Params.TimeLimit = 1200
 
 def makesp(sol_dict={},relax=True):
     sp = gp.Model("sp")
+    sp.setParam('OutputFlag', 0)
+
     sp.setParam('PreCrush', 1)
     sp.setParam('InfUnbdInfo', 1)
-    sp.setParam('OutputFlag', 0)
 
     x = sp.addVars(S, ALL, vtype=GRB.CONTINUOUS, name="x")
     r = sp.addVars(S, ALL, vtype=GRB.CONTINUOUS, name="r")
@@ -102,68 +100,65 @@ def makesp(sol_dict={},relax=True):
         r[s, j] - r[s, i] + delta[s, j, i] * 10000 >= sep[i, j] * sol_dict[z[i, j]] for s in S for i in ALL for j in
         ALL if i != j)
     sp.update()
-    num_constrs1 = sp.NumConstrs
     sp.setObjective(gp.quicksum(r[s, i] - x[s, i] for s in S for i in ALL), GRB.MINIMIZE)
 
     sp.optimize()
     return sp
 
 
-def mycallback(model, where):
-    if where == GRB.Callback.MIPSOL:
-        # 获取主问题的当前整数解
-        curr_sol = model.cbGetSolution(model._vars)
-        sol_dict = {var: curr_sol[i] for i, var in enumerate(model._vars)}
-        # 构建并求解子问题
-        sp=makesp(sol_dict)
-        # bsp=makesp(sol_dict,relax=False)
-        rhs = ([t[i] + ds[s][i] for s in S for i in ALL] + [1 for s in S for i in ALL for j in ALL if i > j] +
-               [lb_u[i] for s in S for i in ALL] + [-ub_u[i] for s in S for i in ALL] +
-               [sep[i, j] * z[i, j] for s in S for i in ALL for j in ALL if i != j])
-        rhs=np.array(rhs)
-        # 根据子问题的结果向主问题添加惰性约束（如适用）and bsp.status == GRB.OPTIMAL
-        if sp.status == GRB.OPTIMAL :
-            print('optimal cut')
-            # extreme point,get dual var
-            constraints = sp.getConstrs()
-            print( model.NumConstrs)
-            # num_constrs2 = len(constraints)
-            duals = [constr.Pi for constr in constraints]
-            duals=np.array(duals)
-            # num_duals = len(duals)
-            # 遍历约束和对偶变量
+iter = 0
+# 设置阈值gap
+gap = 1e-10
+tic=time.time()
+while True:
+    # 求解主问题
+    mp.optimize()
+    # 求解子问题
+    curr_sol = mp.getAttr('X')
+    sol_dict = {var: curr_sol[i] for i, var in enumerate(mp.getVars())}
+    sp = makesp(sol_dict, relax=True)
+
+    # 构建cut的右侧项
+    rhs = [t[i] + ds[s][i] for s in S for i in ALL] + [1 for s in S for i in ALL for j in ALL if i > j] + \
+          [lb_u[i] for s in S for i in ALL] + [-ub_u[i] for s in S for i in ALL] + \
+          [sep[i, j] * z[i, j] for s in S for i in ALL for j in ALL if i != j]
+    rhs = np.array(rhs)
+
+    # 如果子问题有界,添加 Benders optimallity cut
+    if sp.status == GRB.OPTIMAL:
+        # 计算子问题解的目标值q(y*)
+        sp_obj_val = sp.ObjVal # UB
+
+        # 计算主问题的q*
+        # mp_obj_val = mp.ObjVal
+        q_value = mp.getVarByName("q").X # LB
+
+        # abs(q(y*) - q) > gap?
+        # yes:optimally cut
+        if abs(sp_obj_val - q_value) > gap:
+            print('Adding optimaillity cut')
+            # 获取子问题的对偶变量
+            duals = [constr.Pi for constr in sp.getConstrs()]
+            duals = np.array(duals)
+            # 计算cut的系数
             optcut = sum(duals * rhs)
-            # lazy cut
-            model.cbLazy( optcut<=q)
-            # in [GRB.INFEASIBLE, GRB.INF_OR_UNBD]:
-        elif sp.status == GRB.INFEASIBLE  or sp.status == GRB.INF_OR_UNBD :
-            print('feasible cut,sp.status:',sp.status)
-
-            farkas_duals = [constr.FarkasDual for constr in sp.getConstrs()]
-            optcut = sum(farkas_duals * rhs)
-            model.cbLazy( optcut<=0)
-        # elif sp.status == GRB.OPTIMAL and bsp.status == GRB.INF_OR_UNBD:
-        #     print('bsp cut')
-        #     duals = [constr.Pi for constr in sp.getConstrs()]
-        #     optcut = sum(duals * rhs)
-        #     model.cbLazy( optcut<=0)
-
-
+            mp.addConstr(optcut <= q, name='optcut')
+            print(mp.NumConstrs)
+            # mp.update()
 
         else:
-            print('error')
-    # elif where == GRB.Callback.MIPSOL:
+            # no:break
+            toc=time.time()
+            break
 
-# 注册回调函数
-mp._vars = list(t.values()) + list(y.values()) + list(z.values())
-# mp.NumVars
-# mp.NumConstrs
-mp.update()
-print(mp.NumConstrs)
+    # 如果子问题无界,添加 Benders feasibility cut
+    elif sp.status == GRB.INF_OR_UNBD:
+        print('Adding infeasibility cut')
+        # 获取子问题的Farkas Dual
+        farkas_duals = [constr.FarkasDual for constr in sp.getConstrs()]
+        optcut = sum(farkas_duals * rhs)
+        mp.addConstr(optcut <= 0, name='infcut')
 
-mp.optimize(mycallback)
-
-# bsp=makesp(relax=False)
 
 
 def postbsp(t,z):
@@ -185,7 +180,6 @@ def postbsp(t,z):
         r[s, j] - r[s, i] + delta[s, j, i] * 10000 >= sep[i, j] * z[i, j] for s in S for i in ALL for j in
         ALL if i != j)
     sp.update()
-    num_constrs1 = sp.NumConstrs
     sp.setObjective(gp.quicksum(r[s, i] - x[s, i]for s in S for i in ALL), GRB.MINIMIZE)
 
     sp.optimize()
@@ -202,31 +196,18 @@ mp.setParam(GRB.Param.SolutionNumber,0)
 T = np.array([t[i].Xn for i in ALL])
 Y = np.array([[y[i, r].Xn for r in R] for i in ALL])
 Z = np.array([[z[i, j].Xn for j in ALL] for i in ALL])
+ALPHA = np.array([alpha[i].Xn for i in ALL])
+BETA = np.array([beta[i].Xn for i in ALL])
+
 sp2,X,RR,DELTA=postbsp(T,Z)
 
 TrueObj=mp.objVal-1/len(S)*q.Xn+1/len(S)*sp2.objVal
+print('s1:',mp.objVal-1/len(S)*q.Xn)
 print('TrueObj:',TrueObj)
-ALPHA = np.array([alpha[i].Xn for i in ALL])
-BETA = np.array([beta[i].Xn for i in ALL])
-# # zij
-# # 获取obj
-# OBJ = mp.objVal
-# obj1_value = obj1.getValue()
-# obj2_value = obj2.getValue()
-# obj3_value = 1 / len(S) * obj3.getValue()
+print('run time:',toc-tic)
+
+
 #
-# gap = mp.getAttr('MIPGap')
-# # mp.NumVars
-# # mp.NumConstrs
-#
-#
-# S = len(S)
-# # ddf=pd.DataFrame([obj1_value,obj2_value,obj3_value,gap,t]).T
-# # ddf.to_csv(fr'D:\nuaadzm\PycharmProjects\detour\rso_model3\saa\ans3.csv')
-# dsd = get_random(randtype, S, D, p1d, p2d, seed=42)
-# dsa = get_random(randtype, S, A, p1a, p2a, seed=42)
-# ds = np.concatenate((dsd, dsa), axis=1)
-# ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, S, DELTA, ds, df, k)
-# drawres(D, A, ac_list, S, obte, obtl, ete, etl)
-#
-# mtp(mp)
+ac_list, df = saveres(D, A, ac_list, T, Y, X, RR, len(S), DELTA, ds, df, k)
+drawres(D, A, ac_list, len(S), obte, obtl, ete, etl)
+

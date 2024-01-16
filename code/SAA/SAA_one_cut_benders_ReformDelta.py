@@ -4,7 +4,6 @@ from gurobipy import GRB
 from DST4ATM.optbase.aircraft_rso import Parameters, saveres, drawres
 import numpy as np
 import warnings
-from docplex.mp.model import Model
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'

@@ -5,8 +5,8 @@ from docplex.mp.model import Model
 
 warnings.filterwarnings('ignore')
 modeltype = 'SAA'
-timerange =1000
-S = 10
+timerange =300
+S = 100
 
 weight = 1
 parm = Parameters(timerange, S)
@@ -85,13 +85,11 @@ obj2 = Zmax - Zmin
 obj3 = m.sum(r[s, i] - x[s, i] for s in S for i in ALL)
 m.minimize(weight * obj1 + obj2 + 1 / len(S) * obj3)
 m.print_information()
-m.add_kpi(weight * obj1 + obj2 ,'1st cost')
-
-m.add_kpi(1 / len(S) * obj3,'2nd cost')
+m.add_kpi(obj3,'2nd cost')
 
 solution = m.solve()
 m.report()
-# m.report_kpis()
+m.report_kpis()
 if solution:
     print("求解成功")
 else:
