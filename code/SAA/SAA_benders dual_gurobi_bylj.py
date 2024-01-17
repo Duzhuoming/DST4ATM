@@ -25,7 +25,7 @@ ds = parm.ds
 S,k=parm.S,parm.k
 
 mp = gp.Model("MP")
-# mp.setParam('LazyConstraints', 1)
+mp.setParam('LazyConstraints', 1)
 mp.setParam('OutputFlag', 0)
 # 设置解池相关参数
 # mp.setParam(GRB.Param.PoolSolutions, 10)  # 存储10个最优解
